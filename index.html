@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Dilemma</title>
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle, #0a0a0a 30%, #000 100%);
+      color: #00ffe1;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      transition: background-color 1s ease;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .intro-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 2rem;
+      text-align: center;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 10px;
+      opacity: 0;
+      animation: fadeIn 3s forwards;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    .scenario-box {
+      background-color: rgba(0, 255, 225, 0.1);
+      border: 1px solid #00ffe1;
+      padding: 2rem;
+      border-radius: 20px;
+      max-width: 700px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 20px #00ffe188;
+    }
+
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .choice-button {
+      background-color: #0a0a0a;
+      color: #00ffe1;
+      border: 1px solid #00ffe1;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .choice-button:hover {
+      background-color: #00ffe1;
+      color: #000;
+    }
+
+    .scoreboard {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+      opacity: 0.8;
+    }
+
+    .timer {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #ff5050;
+    }
+
+    .databubble {
+      position: absolute;
+      border: 1px solid #00ffe1;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: float 20s infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-100px) translateX(50px); }
+      100% { transform: translateY(0) translateX(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="intro" class="intro-container">
+  <h1>Willkommen im Data Dilemma</h1>
+  <p>In einer Welt, in der deine Daten immer mehr an Bedeutung gewinnen, bist du derjenige, der entscheiden muss, wie viel du preisgibst.</p>
+  <p>Jede Entscheidung, die du triffst, wird Auswirkungen auf dein Leben, deinen Datenschutz und die Gesellschaft haben.</p>
+  <p>Bist du bereit, in die digitale Zukunft einzutauchen?</p>
+  <button class="choice-button" onclick="startGame()">Beginne das Spiel</button>
+</div>
+
+<div class="game-container" id="game-container" style="display: none;">
+  <div class="scenario-box" id="scenario">Lade erstes Szenario ...</div>
+  <div class="choices" id="choices"></div>
+  <div class="timer" id="timer"></div>
+  <div class="scoreboard" id="scoreboard">Datenschutz: 0 | Ethik: 0 | Komfort: 0</div>
+</div>
+
+<!-- Datenblasen -->
+<div class="databubble" style="width: 120px; height: 120px; top: 10%; left: 20%;"></div>
+<div class="databubble" style="width: 80px; height: 80px; top: 60%; left: 70%;"></div>
+<div class="databubble" style="width: 150px; height: 150px; top: 30%; left: 50%;"></div>
+<div class="databubble" style="width: 60px; height: 60px; top: 80%; left: 10%;"></div>
+<div class="databubble" style="width: 100px; height: 100px; top: 50%; left: 80%;"></div>
+
+<script>
+  const allScenarios = [
+    {
+      text: "Du erhältst ein kostenloses WLAN in einem Café. Dafür musst du deine E-Mail-Adresse angeben.",
+      choices: [
+        { text: "Ich gebe meine echte Adresse ein.", effect: [0, -1, 2] },
+        { text: "Ich benutze eine Wegwerf-Adresse.", effect: [2, 1, -1] },
+        { text: "Ich nutze das WLAN nicht.", effect: [3, 2, -2] }
+      ]
+    },
+    {
+      text: "Eine App fragt nach Zugriff auf deine Kontakte, um Funktionen zu erweitern.",
+      choices: [
+        { text: "Zugriff gewähren.", effect: [-2, -1, 3] },
+        { text: "Nur temporär gewähren.", effect: [1, 1, 1] },
+        { text: "Ablehnen.", effect: [3, 2, -1] }
+      ]
+    },
+    {
+      text: "Dein Freund postet ein peinliches Bild von dir. Du kannst es melden oder ignorieren.",
+      choices: [
+        { text: "Ignorieren.", effect: [-1, -2, 1] },
+        { text: "Freund bitten, es zu löschen.", effect: [2, 3, 0] },
+        { text: "Bild melden.", effect: [1, 2, -1] }
+      ]
+    },
+    {
+      text: "Ein Onlinedienst bietet dir 20% Rabatt, wenn du ihn mit deinem Social-Media-Profil verknüpfst.",
+      choices: [
+        { text: "Ich nutze das Angebot.", effect: [-1, -1, 3] },
+        { text: "Ich verzichte darauf.", effect: [2, 2, -1] },
+        { text: "Ich suche nach Alternativen.", effect: [1, 1, 0] }
+      ]
+    },
+    {
+      text: "Du findest einen USB-Stick im Park.",
+      choices: [
+        { text: "Ich stecke ihn zu Hause in meinen PC.", effect: [-3, -2, 1] },
+        { text: "Ich gebe ihn beim Fundbüro ab.", effect: [2, 3, 0] },
+        { text: "Ich lasse ihn liegen.", effect: [0, 2, 0] }
+      ],
+      timed: true,
+      timeLimit: 10 // Sekunden
+    },
+    {
+      text: "Eine kostenpflichtige App bietet dir an, deine Gesundheitsdaten zu analysieren, wenn du die kostenlose Version nutzt.",
+      choices: [
+        { text: "Ich gebe meine Gesundheitsdaten an.", effect: [-2, -3, 2] },
+        { text: "Ich verzichte und zahle für die Vollversion.", effect: [3, 2, -1] },
+        { text: "Ich lehne das Angebot ab.", effect: [1, 1, -2] }
+      ]
+    },
+    {
+      text: "Ein Dienst fordert dich auf, deine Kontodaten zu teilen, um ein Angebot zu erhalten.",
+      choices: [
+        { text: "Ich teile meine Kontodaten.", effect: [-3, -4, 1] },
+        { text: "Ich verzichte auf das Angebot.", effect: [2, 3, -1] },
+        { text: "Ich suche nach einer sicheren Alternative.", effect: [1, 2, 0] }
+      ]
+    },
+    {
+      text: "Ein Online-Shop bietet dir eine kostenlose Mitgliedschaft, wenn du deine Passwörter für andere Dienste dort speicherst.",
+      choices: [
+        { text: "Ich speichere meine Passwörter dort.", effect: [-5, -3, 2] },
+        { text: "Ich verzichte auf das Angebot.", effect: [3, 2, -1] },
+        { text: "Ich speichere nur einige Passwörter.", effect: [-1, 1, 0] }
+      ]
+    },
+    {
+      text: "Eine kostenlose App möchte auf deine Gesundheitsdaten zugreifen, um dir personalisierte Empfehlungen zu geben.",
+      choices: [
+        { text: "Ich gebe meine Gesundheitsdaten frei.", effect: [-3, -2, 1] },
+        { text: "Ich lehne den Zugriff ab.", effect: [2, 2, -1] },
+        { text: "Ich überlege es mir noch.", effect: [1, 1, 0] }
+      ]
+    }
+  ];
+
+  let current = 0;
+  let scores = [0, 0, 0]; // Datenschutz, Ethik, Komfort
+  let timerInterval;
+  let currentScenario = getRandomScenarios();
+
+  function startGame() {
+    document.getElementById("intro").style.display = "none";
+    document.getElementById("game-container").style.display = "flex";
+    renderScenario();
+  }
+
+  function getRandomScenarios() {
+    const randomScenarios = [];
+    const indices = [];
+    while (randomScenarios.length < 7) {
+      let rand = Math.floor(Math.random() * allScenarios.length);
+      if (!indices.includes(rand)) {
+        randomScenarios.push(allScenarios[rand]);
+        indices.push(rand);
+      }
+    }
+    return randomScenarios;
+  }
+
+  function renderScenario() {
+    clearInterval(timerInterval);
+    document.getElementById("timer").textContent = "";
+
+    if (current >= currentScenario.length) {
+      showResult();
+      return;
+    }
+
+    const scenario = currentScenario[current];
+    document.getElementById("scenario").textContent = scenario.text;
+    const choicesDiv = document.getElementById("choices");
+    choicesDiv.innerHTML = "";
+
+    scenario.choices.forEach((choice, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = choice.text;
+      btn.className = "choice-button";
+      btn.onclick = () => {
+        scores = scores.map((val, i) => val + choice.effect[i]);
+        current++;
+        updateScore();
+        renderScenario();
+      };
+      choicesDiv.appendChild(btn);
+    });
+
+    if (scenario.timed) {
+      let timeLeft = scenario.timeLimit;
+      document.getElementById("timer").textContent = `Zeit: ${timeLeft}s`;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").textContent = `Zeit: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          // keine Wahl getroffen, neutraler Effekt
+          scores = scores.map((val, i) => val + 0);
+          current++;
+          updateScore();
+          renderScenario();
+        }
+      }, 1000);
+    }
+  }
+
+  function updateScore() {
+    document.getElementById("scoreboard").textContent = `Datenschutz: ${scores[0]} | Ethik: ${scores[1]} | Komfort: ${scores[2]}`;
+  }
+
+  function showResult() {
+    const [d, e, c] = scores;
+    let type = "";
+    if (d > e && d > c) type = "Datenschutz-Enthusiast";
+    else if (e > d && e > c) type = "Ethik-Fokusierter";
+    else if (c > d && c > e) type = "Daten-Exhibitionist";
+    else type = "Allrounder";
+
+    document.getElementById("scenario").innerHTML = `<strong>Analyse:</strong><br>Du bist ein <em>${type}</em>!`;
+    document.getElementById("choices").innerHTML = `<button class='choice-button' onclick='restart()'>↻ Nochmal spielen</button>`;
+  }
+
+  function restart() {
+    current = 0;
+    scores = [0, 0, 0];
+    updateScore();
+    currentScenario = getRandomScenarios();
+    renderScenario();
+  }
+
+  renderScenario();
+</script>
+
+</body>
+</html>
